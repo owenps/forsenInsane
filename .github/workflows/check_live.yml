@@ -62,49 +62,24 @@ jobs:
             echo "should_trigger=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Check state for recent tweet
+      - name: Check if Timer Monitor already running
         if: steps.check_live.outputs.should_trigger == 'true'
-        id: check_state
+        id: check_running
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          result=$(python -c "
-          import json
-          import sys
-          from datetime import datetime, timezone
-
-          config = json.load(open('config.json'))
-          state = json.load(open('state.json'))
-
-          last_tweet = state.get('last_tweet_time')
-          if not last_tweet:
-              print('No previous tweet, should proceed')
-              print('PROCEED')
-              sys.exit(0)
-
-          last_time = datetime.fromisoformat(last_tweet.replace('Z', '+00:00'))
-          now = datetime.now(timezone.utc)
-          elapsed = (now - last_time).total_seconds()
-          max_threshold = config.get('max_threshold_seconds', 867)
-
-          if elapsed < max_threshold:
-              print(f'Recently tweeted ({elapsed:.0f}s ago), same run still active')
-              sys.exit(0)
-
-          print(f'Last tweet was {elapsed:.0f}s ago, should proceed')
-          print('PROCEED')
-          ")
-          echo "$result"
-          if echo "$result" | grep -q "PROCEED"; then
-            echo "proceed=true" >> $GITHUB_OUTPUT
+          running=$(gh run list --workflow=check_timer.yml --status=in_progress --json databaseId -q 'length')
+          if [ "$running" -gt 0 ]; then
+            echo "Timer Monitor already running, skipping"
+          else
+            echo "No Timer Monitor running, will trigger"
+            echo "should_trigger=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Trigger Tier 2 workflow
-        if: steps.check_state.outputs.proceed == 'true'
+      - name: Trigger Timer Monitor workflow
+        if: steps.check_running.outputs.should_trigger == 'true'
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token $GH_PAT" \
-            https://api.github.com/repos/${{ github.repository }}/dispatches \
-            -d '{"event_type": "minecraft_detected"}'
+          gh workflow run check_timer.yml
           echo "Triggered Timer Monitor workflow"
