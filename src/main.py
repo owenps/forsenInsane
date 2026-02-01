@@ -6,6 +6,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from .capture import capture_stream_frame
 from .ocr import format_timer, read_timer_from_frame
 from .twitch import check_minecraft_stream
