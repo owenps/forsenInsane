@@ -2,11 +2,11 @@ import re
 from typing import Optional
 
 import pytesseract
-from PIL import Image, ImageFilter, ImageOps
+from PIL import Image, ImageOps
 
-# Default timer region (top-right area, needs calibration for forsen's overlay)
+# Timer region containing both RTA and IGT lines (top-right)
 # Format: (left, top, right, bottom) as percentages of image dimensions
-DEFAULT_TIMER_REGION = (0.75, 0.02, 0.98, 0.08)
+DEFAULT_TIMER_REGION = (0.80, 0.02, 0.995, 0.10)
 
 
 def crop_timer_region(
@@ -26,54 +26,78 @@ def preprocess_image(image: Image.Image) -> Image.Image:
     """
     Preprocess image for better OCR accuracy.
 
-    Pipeline: grayscale -> scale up -> threshold -> invert -> cleanup
+    Pipeline: grayscale -> threshold -> invert -> scale up
     """
     # Convert to grayscale
     gray = ImageOps.grayscale(image)
 
-    # Scale up for better OCR (Tesseract works better with larger text)
-    scaled = gray.resize((gray.width * 3, gray.height * 3), Image.Resampling.LANCZOS)
+    # Lower threshold to capture bright timer text and preserve colons
+    threshold = 95
+    binary = gray.point(lambda p: 255 if p > threshold else 0)
 
-    # Apply threshold to create binary image
-    threshold = 180
-    binary = scaled.point(lambda p: 255 if p > threshold else 0)
+    # Invert so we get black text on white background (better for Tesseract)
+    inverted = ImageOps.invert(binary)
 
-    # Light cleanup
-    cleaned = binary.filter(ImageFilter.MedianFilter(size=3))
+    # Scale up for better OCR (use NEAREST to preserve pixel font)
+    scaled = inverted.resize((inverted.width * 4, inverted.height * 4), Image.Resampling.NEAREST)
 
-    return cleaned
+    return scaled
 
 
 def extract_timer_text(image: Image.Image) -> str:
     """Run Tesseract OCR on the preprocessed image."""
-    config = "--psm 7 -c tessedit_char_whitelist=0123456789:"
+    # psm 11 = sparse text, works better with this pixel font
+    config = "--psm 11"
     text = pytesseract.image_to_string(image, config=config)
     return text.strip()
 
 
+def _fix_ocr_digits(text: str) -> str:
+    """Fix common OCR misreads for this specific pixel timer font."""
+    # Based on observed OCR errors: 0 reads as A/G/B/O, etc.
+    replacements = {
+        'O': '0', 'o': '0', 'Q': '0', 'D': '0',
+        'A': '0', 'G': '0',  # 0 often misread as A or G in this font
+        'B': '0', 'b': '0',  # 0 also misread as B
+        'I': '1', 'l': '1', 'i': '1', '|': '1',
+        'Z': '2', 'z': '2',
+        'S': '5', 's': '5',
+        'g': '9', 'q': '9',
+    }
+    result = text
+    for old, new in replacements.items():
+        result = result.replace(old, new)
+    return result
+
+
 def parse_timer(text: str) -> Optional[int]:
     """
-    Parse timer text (MM:SS or M:SS) to total seconds.
+    Parse IGT timer from OCR text.
 
-    Returns None if parsing fails.
+    Looks for time patterns (MM:SS), handling common OCR errors.
+    Returns timer value in seconds, or None if parsing fails.
     """
-    # Match patterns like "10:23", "9:45", "1:23:45"
-    match = re.search(r"(\d{1,2}):(\d{2})(?::(\d{2}))?", text)
-    if not match:
-        return None
+    # First fix common OCR digit misreads
+    fixed = _fix_ocr_digits(text)
 
-    groups = match.groups()
-    if groups[2] is not None:
-        # H:MM:SS format
-        hours = int(groups[0])
-        minutes = int(groups[1])
-        seconds = int(groups[2])
-        return hours * 3600 + minutes * 60 + seconds
-    else:
-        # MM:SS format
-        minutes = int(groups[0])
-        seconds = int(groups[1])
-        return minutes * 60 + seconds
+    # Find all time patterns MM:SS in the fixed text
+    times = re.findall(r"(\d{1,2}):(\d{2})", fixed)
+
+    if len(times) >= 2:
+        # Second time is likely IGT (RTA is first, IGT is second)
+        minutes = int(times[1][0])
+        seconds = int(times[1][1])
+        if seconds < 60:
+            return minutes * 60 + seconds
+
+    if times:
+        # Fallback to first/only time found
+        minutes = int(times[0][0])
+        seconds = int(times[0][1])
+        if seconds < 60:
+            return minutes * 60 + seconds
+
+    return None
 
 
 def format_timer(seconds: int) -> str:
