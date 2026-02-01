@@ -1,8 +1,5 @@
-"""Main entry point for the forsenInsane bot."""
-
 import argparse
 import json
-import os
 import sys
 import time
 from datetime import datetime, timezone
@@ -113,7 +110,9 @@ def check_timer_loop(
         # Check for approaching job timeout
         elapsed = time.time() - start_time
         if elapsed > MAX_RUNTIME:
-            print(f"Approaching job timeout ({elapsed/3600:.1f}h), exiting for re-trigger")
+            print(
+                f"Approaching job timeout ({elapsed / 3600:.1f}h), exiting for re-trigger"
+            )
             return None
         iteration += 1
         print(f"\n--- Check #{iteration} ---")
@@ -152,7 +151,9 @@ def check_timer_loop(
 
         # Check thresholds
         if timer_seconds > max_threshold:
-            print(f"Timer past max threshold ({format_timer(max_threshold)}), run failed")
+            print(
+                f"Timer past max threshold ({format_timer(max_threshold)}), run failed"
+            )
             return None
 
         if timer_seconds >= min_threshold:
@@ -177,7 +178,9 @@ def check_timer_loop(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="forsenInsane Minecraft speedrun tracker")
+    parser = argparse.ArgumentParser(
+        description="forsenInsane Minecraft speedrun tracker"
+    )
     parser.add_argument(
         "--mode",
         choices=["check-live", "check-timer", "full"],

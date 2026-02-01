@@ -1,8 +1,7 @@
-"""Twitch API integration for checking stream status."""
-
 import os
-import requests
 from typing import Optional
+
+import requests
 
 
 class TwitchClient:
@@ -20,9 +19,7 @@ class TwitchClient:
         self.client_secret = client_secret or os.environ.get("TWITCH_CLIENT_SECRET")
 
         if not self.client_id or not self.client_secret:
-            raise ValueError(
-                "TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET must be set"
-            )
+            raise ValueError("TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET must be set")
 
         self._access_token: Optional[str] = None
 
@@ -67,7 +64,9 @@ class TwitchClient:
             return None
         return data[0]
 
-    def is_live_with_game(self, username: str, game_name: str) -> tuple[bool, Optional[dict]]:
+    def is_live_with_game(
+        self, username: str, game_name: str
+    ) -> tuple[bool, Optional[dict]]:
         """
         Check if a user is live and playing a specific game.
 

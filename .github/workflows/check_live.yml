@@ -1,4 +1,4 @@
-name: Check Live (Tier 1)
+name: Live Check
 
 on:
   schedule:
@@ -98,4 +98,4 @@ jobs:
             -H "Authorization: token $GH_PAT" \
             https://api.github.com/repos/${{ github.repository }}/dispatches \
             -d '{"event_type": "minecraft_detected"}'
-          echo "Triggered check_timer workflow"
+          echo "Triggered Timer Monitor workflow"

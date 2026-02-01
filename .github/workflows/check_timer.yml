@@ -1,4 +1,4 @@
-name: Check Timer (Tier 2)
+name: Timer Monitor
 
 on:
   repository_dispatch:

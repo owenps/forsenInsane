@@ -1,5 +1,3 @@
-"""X (Twitter) posting via tweepy."""
-
 import os
 from typing import Optional
 
@@ -23,12 +21,14 @@ class XClient:
             "X_ACCESS_TOKEN_SECRET"
         )
 
-        if not all([
-            self.consumer_key,
-            self.consumer_secret,
-            self.access_token,
-            self.access_token_secret,
-        ]):
+        if not all(
+            [
+                self.consumer_key,
+                self.consumer_secret,
+                self.access_token,
+                self.access_token_secret,
+            ]
+        ):
             raise ValueError(
                 "All X API credentials must be set: "
                 "X_CONSUMER_KEY, X_CONSUMER_SECRET, X_ACCESS_TOKEN, X_ACCESS_TOKEN_SECRET"

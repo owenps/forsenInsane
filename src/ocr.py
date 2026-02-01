@@ -1,5 +1,3 @@
-"""OCR processing for reading the IGT timer from stream frames."""
-
 import re
 from typing import Optional
 

@@ -1,5 +1,3 @@
-"""Stream frame capture using streamlink and ffmpeg."""
-
 import subprocess
 import tempfile
 from pathlib import Path
@@ -40,9 +38,12 @@ def capture_frame(stream_url: str, output_path: Optional[str] = None) -> Optiona
             [
                 "ffmpeg",
                 "-y",  # Overwrite output
-                "-i", stream_url,
-                "-vframes", "1",
-                "-q:v", "2",
+                "-i",
+                stream_url,
+                "-vframes",
+                "1",
+                "-q:v",
+                "2",
                 output_path,
             ],
             capture_output=True,
@@ -58,7 +59,9 @@ def capture_frame(stream_url: str, output_path: Optional[str] = None) -> Optiona
         return None
 
 
-def capture_stream_frame(channel: str, output_path: Optional[str] = None) -> Optional[str]:
+def capture_stream_frame(
+    channel: str, output_path: Optional[str] = None
+) -> Optional[str]:
     """
     Capture a single frame from a Twitch channel's stream.
 
