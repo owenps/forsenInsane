@@ -23,3 +23,19 @@ We poll from twitch instead of recieving notifications from twitch webhooks. Thi
   - If no: sleep for 60 seconds then loop again.
 
 The bot maintains a local state `state.json` for not sending multiple notifications for the same run. Configurations for the bot live in `config.json`.
+
+## Development
+
+Install requirements, and setup API keys.
+
+```
+cp .env.example .env
+# Fill in your credentials in .env
+pip install -r requirements.txt
+```
+
+You can run the bot while mocking the post to X by using `--dryrun` flag.
+
+```
+python -m src.main --dry-run
+```
