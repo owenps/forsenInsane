@@ -30,6 +30,9 @@ allows the script to be executed as a job on github actions.
 The bot maintains a local state `state.json` for not sending multiple notifications
 for the same run. Configurations for the bot live in `config.json`.
 
+> [!NOTE]
+> If forsen moves the timer, the OCR will need to be updated.
+
 ## Development
 
 ### First time setup
