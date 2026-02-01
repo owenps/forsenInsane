@@ -1,7 +1,6 @@
 # forsenInsane bot
 
 [![Live Check](https://github.com/owenps/forsenInsane/actions/workflows/check_live.yml/badge.svg)](https://github.com/owenps/forsenInsane/actions/workflows/check_live.yml)
-
 [![Timer Monitor](https://github.com/owenps/forsenInsane/actions/workflows/check_timer.yml/badge.svg)](https://github.com/owenps/forsenInsane/actions/workflows/check_timer.yml)
 
 Automated tracking and notifications for [Forsen](https://twitch.tv/forsen)'s
