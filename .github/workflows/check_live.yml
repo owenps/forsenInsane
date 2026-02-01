@@ -35,7 +35,7 @@ jobs:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
         run: |
-          python -c "
+          result=$(python -c "
           import json
           import sys
           sys.path.insert(0, '.')
@@ -48,21 +48,25 @@ jobs:
 
           if not stream:
               print(f'{streamer} is offline')
-              sys.exit(1)
+              sys.exit(0)
 
           if not is_minecraft:
               print(f'{streamer} is playing {stream.get(\"game_name\")}, not Minecraft')
-              sys.exit(1)
+              sys.exit(0)
 
           print(f'{streamer} is live with Minecraft!')
-          "
-          echo "should_trigger=true" >> $GITHUB_OUTPUT
+          print('TRIGGER')
+          ")
+          echo "$result"
+          if echo "$result" | grep -q "TRIGGER"; then
+            echo "should_trigger=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check state for recent tweet
         if: steps.check_live.outputs.should_trigger == 'true'
         id: check_state
         run: |
-          python -c "
+          result=$(python -c "
           import json
           import sys
           from datetime import datetime, timezone
@@ -73,6 +77,7 @@ jobs:
           last_tweet = state.get('last_tweet_time')
           if not last_tweet:
               print('No previous tweet, should proceed')
+              print('PROCEED')
               sys.exit(0)
 
           last_time = datetime.fromisoformat(last_tweet.replace('Z', '+00:00'))
@@ -82,11 +87,15 @@ jobs:
 
           if elapsed < max_threshold:
               print(f'Recently tweeted ({elapsed:.0f}s ago), same run still active')
-              sys.exit(1)
+              sys.exit(0)
 
           print(f'Last tweet was {elapsed:.0f}s ago, should proceed')
-          "
-          echo "proceed=true" >> $GITHUB_OUTPUT
+          print('PROCEED')
+          ")
+          echo "$result"
+          if echo "$result" | grep -q "PROCEED"; then
+            echo "proceed=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Trigger Tier 2 workflow
         if: steps.check_state.outputs.proceed == 'true'
