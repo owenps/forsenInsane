@@ -1,0 +1,101 @@
+name: Check Live (Tier 1)
+
+on:
+  schedule:
+    # Run every 15 minutes
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Check if bot is enabled
+        id: check_enabled
+        run: |
+          enabled=$(python -c "import json; print(json.load(open('config.json'))['enabled'])")
+          echo "enabled=$enabled" >> $GITHUB_OUTPUT
+
+      - name: Check if live with Minecraft
+        if: steps.check_enabled.outputs.enabled == 'True'
+        id: check_live
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+        run: |
+          python -c "
+          import json
+          import sys
+          sys.path.insert(0, '.')
+          from src.twitch import check_minecraft_stream
+
+          config = json.load(open('config.json'))
+          streamer = config['streamer']
+
+          is_minecraft, stream = check_minecraft_stream(streamer)
+
+          if not stream:
+              print(f'{streamer} is offline')
+              sys.exit(1)
+
+          if not is_minecraft:
+              print(f'{streamer} is playing {stream.get(\"game_name\")}, not Minecraft')
+              sys.exit(1)
+
+          print(f'{streamer} is live with Minecraft!')
+          "
+          echo "should_trigger=true" >> $GITHUB_OUTPUT
+
+      - name: Check state for recent tweet
+        if: steps.check_live.outputs.should_trigger == 'true'
+        id: check_state
+        run: |
+          python -c "
+          import json
+          import sys
+          from datetime import datetime, timezone
+
+          config = json.load(open('config.json'))
+          state = json.load(open('state.json'))
+
+          last_tweet = state.get('last_tweet_time')
+          if not last_tweet:
+              print('No previous tweet, should proceed')
+              sys.exit(0)
+
+          last_time = datetime.fromisoformat(last_tweet.replace('Z', '+00:00'))
+          now = datetime.now(timezone.utc)
+          elapsed = (now - last_time).total_seconds()
+          max_threshold = config.get('max_threshold_seconds', 867)
+
+          if elapsed < max_threshold:
+              print(f'Recently tweeted ({elapsed:.0f}s ago), same run still active')
+              sys.exit(1)
+
+          print(f'Last tweet was {elapsed:.0f}s ago, should proceed')
+          "
+          echo "proceed=true" >> $GITHUB_OUTPUT
+
+      - name: Trigger Tier 2 workflow
+        if: steps.check_state.outputs.proceed == 'true'
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          curl -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token $GH_PAT" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d '{"event_type": "minecraft_detected"}'
+          echo "Triggered check_timer workflow"

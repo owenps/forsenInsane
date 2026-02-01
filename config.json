@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "min_threshold_seconds": 600,
+  "max_threshold_seconds": 867,
+  "streamer": "forsen"
+}
