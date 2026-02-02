@@ -25,9 +25,9 @@ allows the script to be executed purely as a job on github actions.
   - `ocr.py` detects the IGT time (tesseract)
   - Check if the timer is between 10:00 and 14:27
   - If yes: post to X
-  - If no: sleep for 60 seconds then loop again.
+  - If no: sleep for 60 seconds, then loop again.
 
-The bot maintains a local state `state.json` for not sending multiple notifications
+The bot maintains a local state `state.json` to avoid sending multiple notifications
 for the same run. Configurations for the bot live in `config.json`.
 
 > [!NOTE]
@@ -35,7 +35,7 @@ for the same run. Configurations for the bot live in `config.json`.
 
 ## Development
 
-### First time setup
+### Initial Setup
 
 Install requirements, and setup API keys.
 
