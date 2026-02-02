@@ -21,8 +21,8 @@ allows the script to be executed purely as a job on github actions.
 - `check_live.yml` workflow runs every 15 minutes to check if forsen is live
 - If live, we call `check_timer.yml` which runs on a loop for 5.5 hours
   - Verify forsen is still live + playing minecraft
-  - `capture.py` captures a frame from the stream (streamlink + ffmpeg)
-  - `ocr.py` detects the IGT time (tesseract)
+  - `capture.py` captures a frame from the stream (yt-dlp + ffmpeg)
+  - `ocr.py` detects the IGT time (PaddleOCR)
   - Check if the timer is between 10:00 and 14:27
   - If yes: post to X
   - If no: sleep for 60 seconds, then loop again.
@@ -40,7 +40,7 @@ for the same run. Configurations for the bot live in `config.json`.
 Install requirements, and setup API keys.
 
 ```sh
-brew install ffmpeg tesseract
+brew install ffmpeg
 pip install -r requirements.txt
 ```
 

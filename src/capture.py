@@ -1,25 +1,43 @@
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Optional
 
 
+def check_dependencies() -> list[str]:
+    """Check if required dependencies are installed. Returns list of missing deps."""
+    missing = []
+    # Check yt-dlp via python module (more reliable than checking PATH)
+    try:
+        subprocess.run(
+            ["python3", "-m", "yt_dlp", "--version"],
+            capture_output=True,
+            timeout=10,
+        )
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        missing.append("yt-dlp (pip install yt-dlp)")
+    if not shutil.which("ffmpeg"):
+        missing.append("ffmpeg (brew install ffmpeg)")
+    return missing
+
+
 def get_stream_url(channel: str, quality: str = "best") -> Optional[str]:
     """
-    Get the direct stream URL using streamlink.
+    Get the direct stream URL using yt-dlp.
 
     Returns None if stream is not available.
     """
     try:
         result = subprocess.run(
-            ["streamlink", f"twitch.tv/{channel}", quality, "--stream-url"],
+            ["python3", "-m", "yt_dlp", "--get-url", f"https://twitch.tv/{channel}"],
             capture_output=True,
             text=True,
             timeout=30,
         )
         if result.returncode != 0:
             return None
-        return result.stdout.strip()
+        return result.stdout.strip().split("\n")[0]
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return None
 
@@ -76,6 +94,11 @@ def capture_stream_frame(
 
 if __name__ == "__main__":
     import sys
+
+    missing = check_dependencies()
+    if missing:
+        print(f"Missing required dependencies: {', '.join(missing)}")
+        sys.exit(1)
 
     channel = sys.argv[1] if len(sys.argv) > 1 else "forsen"
     output = sys.argv[2] if len(sys.argv) > 2 else "frame.jpg"
